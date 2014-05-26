@@ -1,6 +1,14 @@
 package com.gorbi;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -94,6 +102,28 @@ public final class PushBullet {
         for(int i=1;i<items.length;i++)
             stringBuilder.append("&items=").append(items[i]);
         push(stringBuilder.toString());
+    }
+
+    public void pushFile(File file) throws IOException{
+
+        if (file.length() >= 26214400)
+            return;
+
+        CredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        CloseableHttpClient closeableHttpClient = HttpClients.custom().setDefaultCredentialsProvider(credsProvider).build();
+        credsProvider.setCredentials(new AuthScope("api.pushbullet.com", 443), new UsernamePasswordCredentials(apiKey, null));
+
+        HttpPost httpPost = new HttpPost("https://api.pushbullet.com/api/pushes");
+
+        MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
+        multipartEntityBuilder.addBinaryBody("file", file);
+        multipartEntityBuilder.addTextBody("device_iden", deviceIden);
+        multipartEntityBuilder.addTextBody("type", "file");
+        httpPost.setEntity(multipartEntityBuilder.build());
+
+        closeableHttpClient.execute(httpPost);
+
     }
 
 }
